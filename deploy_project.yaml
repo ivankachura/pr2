@@ -1,0 +1,54 @@
+- name: Разворачиваем React-проект
+  hosts: server1
+  become: yes
+
+  tasks:
+    - name: Установить версию Node.js v18.18.0
+      get_url:
+        url: https://nodejs.org/dist/v18.18.0/node-v18.18.0.tar.gz
+        dest: /tmp/node-v18.18.0.tar.gz
+      tags: install_nodejs
+
+    - name: Распаковать Node.js
+      command: tar -xzf /tmp/node-v18.18.0.tar.gz -C /tmp/
+      tags: extract_nodejs
+      async: 3600
+      poll: 0
+      ignore_errors: yes
+
+    - name: Установить Node.js
+      command: |
+        cd /tmp/node-v18.18.0
+        ./configure
+        make
+        sudo make install
+      tags: install_nodejs
+      async: 3600
+      poll: 0
+      ignore_errors: yes
+
+    - name: Удалить временные файлы Node.js
+      file:
+        path: /tmp/node-v18.18.0.tar.gz
+        state: absent
+      tags: cleanup_nodejs
+
+    - name: Установить npm
+      command: apt install npm -y
+      tags: install_npm
+
+    - name: Создать директорию для проекта, если её нет
+      file:
+        path: /home/student/pr3
+        state: directory
+      tags: create_directory
+
+    - name: Установить зависимости
+      command: npm install
+      args:
+        chdir: /home/student/pr3/
+      tags: dependencies
+
+    - name: Запустить Nginx
+      command: systemctl start nginx
+      tags: start_nginx
